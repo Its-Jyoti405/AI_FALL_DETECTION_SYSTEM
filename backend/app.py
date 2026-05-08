@@ -58,6 +58,23 @@ def update_user(user_id):
         return jsonify({"id": user[0], "name": user[1], "email": user[2], "mobile": user[3]})
     return jsonify({"error": "User not found"}), 404
 
+@app.route('/api/users/<int:user_id>/password', methods=['PUT'])
+def change_password(user_id):
+    data = request.json
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT password_hash FROM users WHERE id=%s", (user_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+    if not bcrypt.checkpw(data['currentPassword'].encode(), row[0].encode()):
+        conn.close()
+        return jsonify({"error": "Current password is incorrect"}), 401
+    new_hash = bcrypt.hashpw(data['newPassword'].encode(), bcrypt.gensalt()).decode()
+    cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (new_hash, user_id))
+    conn.commit(); conn.close()
+    return jsonify({"success": True})
+
 # ── Detection Logs ────────────────────────────────────
 @app.route('/api/logs/<int:user_id>', methods=['GET'])
 def get_logs(user_id):
