@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, RADIUS, SPACING } from '../utils/theme';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 
 export default function ProfileScreen({ navigation }) {
   const { user, updateUser, logout } = useApp();
@@ -24,15 +25,26 @@ export default function ProfileScreen({ navigation }) {
     Alert.alert('Success', 'Profile updated successfully.');
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!currentPassword || !newPassword) {
       Alert.alert('Error', 'Please enter both current and new passwords.');
       return;
     }
-    // Mocking password change
-    Alert.alert('Success', 'Password changed successfully.');
-    setCurrentPassword('');
-    setNewPassword('');
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'New password must be at least 6 characters.');
+      return;
+    }
+    try {
+      await api.changePassword(user.id, {
+        currentPassword,
+        newPassword,
+      });
+      Alert.alert('Success', 'Password changed successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (err) {
+      Alert.alert('Failed', err.message || 'Could not change password.');
+    }
   };
 
   const handleLogout = () => {
